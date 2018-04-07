@@ -6,11 +6,11 @@
       "type": "cppdbg",
       "request": "launch",
       "program": "${workspaceRoot}/bin/Debug/engine",
-      "args": ["+set fs_basepath ${workspaceRoot}"],
+      "args": ["+set fs_basepath ${workspaceRoot}", "+set fs_game mybase"],
       "stopAtEntry": false,
       "cwd": "${workspaceRoot}/bin/Debug/",
       "environment": [],
-      "externalConsole": false,
+      "externalConsole": true,
       "preLaunchTask": "config=debug_x64",
       "linux": {
         "MIMode": "gdb"
@@ -21,7 +21,7 @@
       "windows": {
         "type": "cppvsdbg",
         "program": "${workspaceRoot}/bin/Debug/engine.exe",   
-        "preLaunchTask": "build"
+        //"preLaunchTask": "build"
       }
     },
     {
