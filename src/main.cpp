@@ -39,6 +39,14 @@ tmx_map *map;
 
 gameExportFuncs_t * gexports;
 SDL_Window *window;
+ConsoleScene *consoleScene;
+
+void Cmd_ToggleConsole_f(void) {
+	if (consoleScene == nullptr) {
+		return;
+	}
+	consoleScene->consoleActive = !consoleScene->consoleActive;
+}
 
 void Cmd_Vid_Restart_f(void) {
 	inf.width = vid_width->integer;
@@ -77,12 +85,14 @@ int main(int argc, char *argv[]) {
 	}
 
 	Com_StartupVariable("fs_basepath");
+	Com_StartupVariable("fs_basegame");
 	Com_StartupVariable("fs_game");
 	FS_Init(argv[0]);
 
 	Cbuf_Init();
 	Cmd_Init();
 	Cmd_AddCommand("vid_restart", Cmd_Vid_Restart_f);
+	Cmd_AddCommand("toggleconsole", Cmd_ToggleConsole_f);
 	Cvar_Init();
 	RegisterMainCvars();
 	CL_InitKeyCommands();
@@ -99,7 +109,7 @@ int main(int argc, char *argv[]) {
 
 	Com_StartupVariable(nullptr);
 
-	if (SDL_Init(SDL_INIT_VIDEO) < 0) {
+	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER) < 0) {
 		Com_Error(ERR_FATAL, "There was an error initing SDL2: %s", SDL_GetError());
 	}
 
@@ -136,6 +146,16 @@ int main(int argc, char *argv[]) {
 		Com_Error(ERR_FATAL, "Could not init glew.");
 	}
 
+	for (int joystickIndex = 0; joystickIndex < SDL_NumJoysticks(); joystickIndex++) {
+		if (!SDL_IsGameController(joystickIndex)) {
+			continue;
+		}
+
+		SDL_GameControllerOpen(joystickIndex);
+		Com_Printf("Opening controller %i\n", joystickIndex);
+		break;
+	}
+
 	soloud.init();
 
 	SDL_GL_MakeCurrent(window, context);
@@ -157,7 +177,7 @@ int main(int argc, char *argv[]) {
 
 	sm = new SceneManager(inf);
 
-	auto consoleScene = new ConsoleScene();
+	consoleScene = new ConsoleScene();
 	consoleScene->Startup(&inf);
 
 	int ver = 0;
@@ -192,20 +212,31 @@ int main(int argc, char *argv[]) {
 				break;
 			}
 
-			if (ev.type == SDL_KEYUP) {
+			if (ev.type == SDL_KEYUP && !consoleScene->consoleActive) {
 				KeyEvent(ev.key.keysym.scancode, false, com_frameTime);
 			}
 
 			if (ev.type == SDL_KEYDOWN) {
+				if (consoleScene->consoleActive && strcmp("toggleconsole", IN_BindForKey(ev.key.keysym.scancode))) {
+					break;
+				}
 				KeyEvent(ev.key.keysym.scancode, true, com_frameTime);
 			}
 
-			if (ev.type == SDL_MOUSEBUTTONUP) {
+			if (ev.type == SDL_MOUSEBUTTONUP && !consoleScene->consoleActive) {
 				MouseEvent(ev.button.button, false, com_frameTime);
 			}
 
-			if (ev.type == SDL_MOUSEBUTTONDOWN) {
+			if (ev.type == SDL_MOUSEBUTTONDOWN && !consoleScene->consoleActive) {
 				MouseEvent(ev.button.button, true, com_frameTime);
+			}
+
+			if (ev.type == SDL_CONTROLLERBUTTONDOWN) {
+				JoyEvent(ev.jbutton.which, ev.jbutton.button, true, com_frameTime);
+			}
+
+			if (ev.type == SDL_CONTROLLERBUTTONUP) {
+				JoyEvent(ev.jbutton.which, ev.jbutton.button, false, com_frameTime);
 			}
 		}
 		

@@ -1,4 +1,5 @@
 import "engine" for Trap, Button, Draw, Scene, Asset, Fill, Color, TileMap
+import "meta" for Meta
 
 class Game is Scene {
    construct new(mapName) {
@@ -43,18 +44,18 @@ class Game is Scene {
    }
 
    update(dt) {
-      var a = Trap.keyPressed(Button.Up, 1000, 500)
-      if (a) {
-         Trap.printLn("up pressed")
-      }
-
       _upActive = Trap.keyActive(Button.Up)
+
+      for (i in 0..11) {
+         if (Trap.keyPressed(i, 0, 1000)) { Trap.printLn("button %(i)") }
+      }
    }
 
    draw(w, h) {
       Trap.dbgWin("window", "contents")
       Draw.clear()
-      Draw.setTransform(h / 180, 0, 0, h / 180, 0, 0, true)
+      Draw.resetTransform()
+      Draw.transform(h / 180, 0, 0, h / 180, 0, 0)
 
       Draw.mapLayer(_bgLayer)
       Draw.mapLayer(_worldLayer)
@@ -125,6 +126,10 @@ class Main {
 
    static draw(w, h) {
       __scene.draw(w, h)
+   }
+
+   static console(line) {
+      Meta.eval(line)
    }
 
    static shutdown() {

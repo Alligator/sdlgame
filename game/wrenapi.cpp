@@ -147,16 +147,30 @@ void wren_dc_setcolor(WrenVM *vm) {
 	DC_SetColor(which != 0.0f ? OUTLINE : FILL, r, g, b, a);
 }
 
-void wren_dc_settransform(WrenVM *vm) {
-	byte a = (byte) wrenGetSlotDouble(vm, 1);
-	byte b = (byte) wrenGetSlotDouble(vm, 2);
-	byte c = (byte) wrenGetSlotDouble(vm, 3);
-	byte d = (byte) wrenGetSlotDouble(vm, 4);
-	byte e = (byte) wrenGetSlotDouble(vm, 5);
-	byte f = (byte) wrenGetSlotDouble(vm, 6);
-	bool absolute = wrenGetSlotBool(vm, 7);
+void wren_dc_reset_transform(WrenVM *vm) {
+	DC_ResetTransform();
+}
 
-	DC_SetTransform(a, b, c, d, e, f, absolute);
+void wren_dc_transform(WrenVM *vm) {
+	float a = (float) wrenGetSlotDouble(vm, 1);
+	float b = (float) wrenGetSlotDouble(vm, 2);
+	float c = (float) wrenGetSlotDouble(vm, 3);
+	float d = (float) wrenGetSlotDouble(vm, 4);
+	float e = (float) wrenGetSlotDouble(vm, 5);
+	float f = (float) wrenGetSlotDouble(vm, 6);
+
+	DC_Transform(a, b, c, d, e, f);
+}
+
+void wren_dc_rotate(WrenVM *vm) {
+	float angle = (float) wrenGetSlotDouble(vm, 1);
+	DC_Rotate(angle);
+}
+
+void wren_dc_translate(WrenVM *vm) {
+	float x = (float) wrenGetSlotDouble(vm, 1);
+	float y = (float) wrenGetSlotDouble(vm, 2);
+	DC_Translate(x, y);
 }
 
 void wren_dc_setscissor(WrenVM *vm) {
@@ -585,7 +599,10 @@ static const wrenMethodDef methods[] = {
 	{ "engine", "Asset", true, "createSprite(_,_,_,_,_)", wren_asset_create_sprite },
 
 	{ "engine", "Draw", true, "setColor(_,_,_,_,_)", wren_dc_setcolor },
-	{ "engine", "Draw", true, "setTransform(_,_,_,_,_,_,_)", wren_dc_settransform },
+	{ "engine", "Draw", true, "resetTransform()", wren_dc_reset_transform },
+	{ "engine", "Draw", true, "transform(_,_,_,_,_,_)", wren_dc_transform },
+	{ "engine", "Draw", true, "rotate(_)", wren_dc_rotate },
+	{ "engine", "Draw", true, "translate(_,_)", wren_dc_translate },
 	{ "engine", "Draw", true, "setScissor(_,_,_,_)", wren_dc_setscissor },
 	{ "engine", "Draw", true, "resetScissor()", wren_dc_resetscissor },
 	{ "engine", "Draw", true, "rect(_,_,_,_,_)", wren_dc_drawrect },
@@ -665,6 +682,7 @@ WrenVM *Wren_Init(const char *mainScriptName, const char *constructorStr) {
 	hnd->updateHnd = wrenMakeCallHandle(vm, "update(_)");
 	hnd->drawHnd = wrenMakeCallHandle(vm, "draw(_,_)");
 	hnd->shutdownHnd = wrenMakeCallHandle(vm, "shutdown()");
+	hnd->consoleHnd = wrenMakeCallHandle(vm, "console(_)");
 
 	if (hnd->updateHnd == nullptr) {
 		trap->Error(ERR_DROP, "couldn't find static update(_) on Main");
@@ -711,6 +729,14 @@ void Wren_Draw(WrenVM *vm, int w, int h) {
 	wrenCall(vm, hnd->drawHnd);
 }
 
+void Wren_Console(WrenVM *vm, const char *str) {
+	wrenHandles_t* hnd = (wrenHandles_t*)wrenGetUserData(vm);
+	wrenEnsureSlots(vm, 2);
+	wrenSetSlotHandle(vm, 0, hnd->instanceHnd);
+	wrenSetSlotString(vm, 1, str);
+	wrenCall(vm, hnd->consoleHnd);
+}
+
 void Wren_Eval(WrenVM *vm, const char *code) {
 	wrenInterpret(vm, code);
 }
@@ -729,6 +755,8 @@ void Wren_FreeVM(WrenVM *vm) {
 	wrenReleaseHandle(vm, hnd->updateHnd);
 	wrenReleaseHandle(vm, hnd->shutdownHnd);
 	wrenReleaseHandle(vm, hnd->instanceHnd);
+	wrenReleaseHandle(vm, hnd->consoleHnd);
+
 	delete hnd;
 
 	wrenFreeVM(vm);

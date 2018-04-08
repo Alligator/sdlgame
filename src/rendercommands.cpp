@@ -22,14 +22,34 @@ const void *RB_SetColor(const void *data) {
 	return (const void *)(cmd + 1);
 }
 
-const void *RB_SetTransform(const void *data) {
-	auto cmd = (const setTransformCommand_t *)data;
+const void *RB_ResetTransform(const void *data) {
+	auto cmd = (const resetTransformCommand_t *)data;
 
-	if (cmd->absolute) {
-		nvgResetTransform(inf.nvg);
-	}
+	nvgResetTransform(inf.nvg);
+
+	return (const void *)(cmd + 1);
+}
+
+const void *RB_Transform(const void *data) {
+	auto cmd = (const transformCommand_t *)data;
 
 	nvgTransform(inf.nvg, cmd->transform[0], cmd->transform[1], cmd->transform[2], cmd->transform[3], cmd->transform[4], cmd->transform[5]);
+
+	return (const void *)(cmd + 1);
+}
+
+const void *RB_Rotate(const void *data) {
+	auto cmd = (const rotateCommand_t *)data;
+
+	nvgRotate(inf.nvg, cmd->angle);
+
+	return (const void *)(cmd + 1);
+}
+
+const void *RB_Translate(const void *data) {
+	auto cmd = (const translateCommand_t *)data;
+
+	nvgTranslate(inf.nvg, cmd->x, cmd->y);
 
 	return (const void *)(cmd + 1);
 }
@@ -219,8 +239,20 @@ void SubmitRenderCommands(renderCommandList_t * list) {
 			data = RB_SetColor(data);
 			break;
 
-		case RC_SET_TRANSFORM:
-			data = RB_SetTransform(data);
+		case RC_RESET_TRANSFORM:
+			data = RB_ResetTransform(data);
+			break;
+
+		case RC_TRANSFORM:
+			data = RB_Transform(data);
+			break;
+
+		case RC_ROTATE:
+			data = RB_Rotate(data);
+			break;
+
+		case RC_TRANSLATE:
+			data = RB_Translate(data);
 			break;
 
 		case RC_SET_SCISSOR:

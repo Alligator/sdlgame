@@ -113,10 +113,24 @@ typedef struct {
 } setColorCommand_t;
 
 typedef struct {
+	byte commandId;
+} resetTransformCommand_t;
+
+typedef struct {
 	byte	commandId;
 	float	transform[6];
-	bool	absolute;
-} setTransformCommand_t;
+} transformCommand_t;
+
+typedef struct {
+	byte	commandId;
+	float	angle;
+} rotateCommand_t;
+
+typedef struct {
+	byte	commandId;
+	float	x;
+	float	y;
+} translateCommand_t;
 
 typedef struct {
 	byte commandId;
@@ -183,7 +197,10 @@ typedef struct {
 typedef enum {
 	RC_END_OF_LIST,
 	RC_SET_COLOR,
-	RC_SET_TRANSFORM,
+	RC_RESET_TRANSFORM,
+	RC_TRANSFORM,
+	RC_ROTATE,
+	RC_TRANSLATE,
 	RC_SET_SCISSOR,
 	RC_DRAW_RECT,
 	RC_DRAW_TEXT,
