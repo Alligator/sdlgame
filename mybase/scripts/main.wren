@@ -1,4 +1,5 @@
 import "engine" for Trap, Button, Draw, Scene, Asset, Fill, Color, TileMap
+import "dialog" for Dialog, DialogManager
 
 class Game is Scene {
   construct new(mapName) {
@@ -28,7 +29,11 @@ class Game is Scene {
     _ignoreBlood = false
     _showBlood = false
 
-    _currentDialog = null
+    var dialogs = _mapObj.where {|obj| obj["type"] == "dialog" }
+    _dialogManager = DialogManager.new(dialogs, _font)
+
+    _npcs = _mapObj.where {|obj| obj["type"] == "npc" }
+
     _bgColor = []
     _frameTime = 0
   }
@@ -70,25 +75,6 @@ class Game is Scene {
     _player["x"] = newPlayerX
     _player["y"] = newPlayerY
 
-    // See if we're in any dialog
-    var objs = _mapObj.where {|obj|
-      var inX = _player["x"] > obj["x"] && _player["x"] < obj["x"] + obj["width"]
-      var inY = _player["y"] > obj["y"] && _player["y"] < obj["y"] + obj["height"]
-      return inX && inY
-    }
-
-    if (objs.count > 0) {
-      _currentDialog = objs.toList[0]
-      if (_currentDialog["name"] == "blood" && !_ignoreBlood) {
-        _showBlood = !_showBlood
-        _frameTime = 0
-        _ignoreBlood = true
-      }
-    } else {
-      _ignoreBlood = false
-      _currentDialog = null
-    }
-
     if (_showBlood) {
       var r = (_frameTime * 1.5).sin.abs * 80
       _bgColor = [r, 0, 0]
@@ -97,16 +83,8 @@ class Game is Scene {
     }
 
     _frameTime = _frameTime + dt
-  }
 
-  drawCurrentDialogText() {
-    var text = _currentDialog["properties"]["text"]
-    var width = Asset.measureBmpText(_font, text)
-    Draw.setColor(Color.Fill, 0, 0, 0, 255)
-    Draw.setColor(Color.Stroke, 255, 255, 255, 255)
-    Draw.rect(_player["x"] - width/2 - 2, _player["y"] - 21, width + 2, 11, false)
-    Draw.rect(_player["x"] - width/2 - 2, _player["y"] - 21, width + 2, 11, true)
-    Draw.bmpText(_font, _player["x"] - width/2, _player["y"] - 20, text)
+    _dialogManager.update(dt, _player)
   }
 
   draw(w, h) {
@@ -120,19 +98,19 @@ class Game is Scene {
     var xoff = w/2
     var yoff = h/2
     var shear = _showBlood ? _frameTime.sin/12 : 0
-    Draw.setTransform(
+    Draw.transform(
       h / 180, 0, shear,
-      h / 180, xoff, yoff,
-      true)
+      h / 180, xoff, yoff
+      )
 
     if (_showBlood) {
       Draw.rotate((_frameTime * 2).sin/80)
     }
 
-    Draw.setTransform(
+    Draw.transform(
       1, 0, 0,
-      1, -xoff/4, -yoff/4,
-      false)
+      1, -xoff/4, -yoff/4
+      )
     Draw.translate(35/2, 20/2)
 
     Draw.mapLayer(_bgLayer)
@@ -144,11 +122,22 @@ class Game is Scene {
 
     Draw.sprite(_spr, 0, _player["x"], _player["y"])
 
+    for (npc in _npcs) {
+      var sprId = Num.fromString(npc["properties"]["sprite"])
+      Draw.sprite(_spr, sprId, npc["x"], npc["y"])
+    }
+
     Draw.mapLayer(_fgLayer)
 
-    if (_currentDialog != null) {
-      drawCurrentDialogText()
-    }
+    _dialogManager.draw(_player)
+
+    Draw.setColor(Color.Fill, 255, 0, 0, 255)
+    Draw.setColor(Color.Stroke, 255, 255, 0, 255)
+    Draw.rect(10, 10, 10, 10, false)
+    Draw.rect(10, 10, 10, 10, true)
+
+    Draw.rect(30, 10, 0.01, 10, false)
+    Draw.rect(30, 10, 0.01, 10, true)
 
     Draw.submit()
   }
