@@ -3,6 +3,7 @@
 #include "draw.h"
 #include <stdio.h>
 #include "scene_wren.h"
+#include "scene_duktape.h"
 #include "game.h"
 
 ClientInfo *clientInf;
@@ -23,7 +24,8 @@ void Cmd_Scene_f(void) {
 		sceneParams = nullptr;
 	}
 
-	auto newScene = new WrenScene(mainScriptName, sceneParams);
+	// auto newScene = new WrenScene(mainScriptName, sceneParams);
+	auto newScene = new DuktapeScene(mainScriptName, sceneParams);
 	if (scene) { delete scene; }
 	scene = newScene;
 	scene->Startup(clientInf);
@@ -50,7 +52,8 @@ void Cmd_Map_f(void) {
 		return;
 	}
 
-	auto newScene = new WrenScene("scripts/main.wren", filename);
+	//auto newScene = new WrenScene("scripts/main.wren", filename);
+	auto newScene = new DuktapeScene("scripts/main.js", filename);
 	if (scene) { delete scene; }
 	scene = newScene;
 	scene->Startup(clientInf);
@@ -61,7 +64,8 @@ static void Init(void *clientInfo, void *imGuiContext) {
 
 	ImGui::SetCurrentContext((ImGuiContext*)imGuiContext);
 
-	auto newScene = new WrenScene("scripts/main.wren", nullptr);
+	// auto newScene = new WrenScene("scripts/main.wren", nullptr);
+	auto newScene = new DuktapeScene("scripts/main.js", nullptr);
 	if (scene) { delete scene; }
 	scene = newScene;
 	scene->Startup(clientInf);
