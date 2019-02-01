@@ -1,6 +1,7 @@
 #include <cstring>
 #include "public.h";
 #include "duktape/duktape.h";
+#include "duktape/duk_module_duktape.h";
 #include "duktapeapi.h";
 #include "game.h"
 #include "draw.h"
@@ -153,8 +154,35 @@ void Duktape_RegisterFunctions(duk_context* ctx) {
 	duk_pop(ctx);
 }
 
+duk_ret_t mod_search(duk_context *ctx) {
+	const char *name = duk_get_string(ctx, 0);
+
+	char *script = nullptr;
+	const char *path = va("scripts/%s.js", name);
+
+	int sz = trap->FS_ReadFile(path, (void**)&script);
+	if (sz > 0) {
+		duk_push_string(ctx, script);
+		return 1;
+	}
+	return 0;
+}
+
+void Duktape_Init_Modules(duk_context *ctx) {
+	// init modules
+	duk_module_duktape_init(ctx);
+
+	// push the modsearch function
+	duk_get_global_string(ctx, "Duktape");
+	duk_push_c_function(ctx, mod_search, 4);
+	duk_put_prop_string(ctx, -2, "modSearch");
+	duk_pop(ctx);
+}
+
 duk_context* Duktape_Init(const char* mainScriptName, const char* constructorStr) {
 	duk_context* ctx = duk_create_heap_default();
+
+	Duktape_Init_Modules(ctx);
 
 	// load main script
 	char *mainStr;
